@@ -1,10 +1,10 @@
 import glob
-import redis
 import time
-
 from os import path
 from threading import Thread
 from uuid import uuid4
+
+import redis
 
 from ..broker import Broker, Consumer, MessageProxy
 from ..common import compute_backoff, current_millis, dq_name, xq_name
@@ -49,13 +49,14 @@ class RedisBroker(Broker):
         connection parameters are provided, the URL is used.
       middleware(list[Middleware])
       namespace(str): The str with which to prefix all Redis keys.
+      watcher(bool): If this broker should run a watcher instance.
       \**parameters(dict): Connection parameters are passed directly
         to :class:`redis.StrictRedis`.
 
     .. _StrictRedis: http://redis-py.readthedocs.io/en/latest/#redis.StrictRedis
     """
 
-    def __init__(self, *, url=None, middleware=None, namespace="dramatiq", **parameters):  # noqa
+    def __init__(self, *, url=None, middleware=None, namespace="dramatiq", watcher=True, **parameters):  # noqa
         super().__init__(middleware=middleware)
 
         if url:
@@ -68,12 +69,16 @@ class RedisBroker(Broker):
         self.queues = set()
         self.client = client = redis.StrictRedis(**parameters)
         self.scripts = {name: client.register_script(script) for name, script in _scripts.items()}
-        self.watcher = _RedisWatcher(self, interval=self.requeue_interval)
+        if watcher:
+            self.watcher = _RedisWatcher(self, interval=self.requeue_interval)
+        else:
+            self.watcher = None
 
     def close(self):
         """Close this broker.
         """
-        self.watcher.stop()
+        if self.watcher:
+            self.watcher.stop()
 
     def consume(self, queue_name, prefetch=1, timeout=5000):
         """Create a new consumer for a queue.
