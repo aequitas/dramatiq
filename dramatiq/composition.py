@@ -49,6 +49,8 @@ class pipeline:
         for child in children:
             if isinstance(child, pipeline):
                 messages.extend(message.copy() for message in child.messages)
+            if isinstance(child, group):
+                messages.extend(message.copy() for message in child.children)
             else:
                 messages.append(child.copy())
 
