@@ -107,7 +107,7 @@ class pipeline:
 
         return count
 
-    def run(self, *, delay=None):
+    def run(self, *, delay: int | None=None):
         """Run this pipeline.
 
         Parameters:
@@ -263,7 +263,7 @@ class group:
 
         return count
 
-    def run(self, *, delay=None):
+    def run(self, *, delay: int|None=None):
         """Run the actors in this group.
 
         Parameters:
